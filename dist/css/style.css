@@ -10,9 +10,22 @@
   top: 0;
   width: 100vw;
   height: 100vh;
+  clip-path: circle(30px at 35px 35px);
 }
 .fs__slide {
   width: 100%;
   height: 100%;
   background-color: lime;
+}
+.fs__slide:nth-child(2) {
+  background-color: red;
+}
+.fs__slide:nth-child(2) {
+  background-color: blue;
+}
+.fs__slide {
+  clip-path: circle(70% at 80% 50%);
+}
+.swiper-wrapper {
+  transition-timing-function: ease-in-out;
 }

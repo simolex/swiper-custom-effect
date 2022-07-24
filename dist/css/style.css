@@ -12,7 +12,13 @@
     height: 100vh;
 }
 .swiper-wrapper {
-    transition-timing-function: ease-in-out;
+    /* transition-timing-function: ease-in-out; */
+}
+.fs__slide {
+    position: relative;
+    clip-path: circle(65% at 50% 50%);
+    transition: clip-path 0.4s ease-in-out;
+    will-change: clip-path;
 }
 .fs__slide:nth-child(3n + 1) {
     background-color: lime;
@@ -38,4 +44,17 @@
 .desc-header {
     font-size: 16px;
     line-height: 1.2;
+}
+
+/*Debug*/
+.debug-panel {
+    background-color: rgba(0, 0, 0, 0.3);
+    position: absolute;
+    z-index: 999;
+    right: 30px;
+    top: 30px;
+    color: #fff;
+    padding: 30px;
+    border-radius: 20px;
+    min-width: 250px;
 }

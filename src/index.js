@@ -17,6 +17,6 @@ import { SwiperDemo } from "./modules/SwiperDemo";
 // });
 
 const sd = new SwiperDemo();
-document.querySelector(".swiper").addEventListener("wheel", (e) => {
-    ///console.log(e.wheelDeltaY);
-});
+// document.querySelector(".swiper").addEventListener("wheel", (e) => {
+//     ///console.log(e.wheelDeltaY);
+// });

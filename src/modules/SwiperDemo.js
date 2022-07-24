@@ -4,10 +4,27 @@ import effectVirtualTransitionEnd from "../../node_modules/swiper/shared/effect-
 
 export class SwiperDemo {
     _progress = 0;
+    debugValue = {};
 
     constructor() {
         this.currentTransitionSpeed = 0;
+        this.currentSlideIndex = 2;
         this.init();
+        this.swiper.init();
+        this.debugValue = {
+            progress: 0,
+            cur_ind: this.currentSlideIndex,
+            direction: "None"
+        };
+    }
+
+    setDebugValue(props, value) {
+        if (!this.debugValue) return;
+        this.debugValue[props] = value;
+
+        for (props in this.debugValue) {
+            document.getElementById(props).textContent = this.debugValue[props];
+        }
     }
 
     getTransitionSpeed() {
@@ -17,33 +34,54 @@ export class SwiperDemo {
         return transitionSpeed;
     }
 
+    getNextIndex() {
+        return this.currentSlideIndex + 1 >= this.swiper.slides.length
+            ? this.swiper.slides.length - 1
+            : this.currentSlideIndex + 1;
+    }
+
+    getBackIndex() {
+        return this.currentSlideIndex - 1 < 0 ? 0 : this.currentSlideIndex - 1;
+    }
+
+    getDirection(animationProgress) {
+        if (!this.swiper) return "NONE";
+
+        const delta = this.currentSlideIndex - animationProgress;
+        if (delta === 0) {
+            return "NONE";
+        } else if (delta < 0) {
+            return "NEXT";
+        } else {
+            return "BACK";
+        }
+    }
+
+    getTargetIndex(animProgress) {
+        const direction = this.getDirection(animProgress);
+        switch (direction) {
+            case "NEXT":
+                return this.getNextIndex();
+            case "BACK":
+                return this.getBackIndex();
+        }
+        return this.currentSlideIndex;
+    }
+
     /*
   A weird way to find this out but I've found no other.
   Checks if the progress on the active slide is 1 or -1 which happens when swiper navigates to next/previous slide on click and keybord navigation.
 If not then the slider is being dragged, so we get the right index by finding the startTranslate from touchEvents in array of transitions the swiper snaps to.
 The startTranslate doesn't exist on initial load so we use the initialSlide index instead.
   */
-    getActiveIndexBeforeTransitionStart(swiper, slides) {
-        const isDragging = !Math.abs(slides[swiper.activeIndex].progress === 1);
-        if (isDragging) {
-            return swiper.slidesGrid.indexOf(-swiper.touchEventsData.startTranslate || swiper.params.initialSlide);
-        } else {
-            return swiper.activeIndex;
-        }
-    }
-
-    getDirection(animationProgress) {
-        if (!this.swiper) return "NONE";
-
-        const delta = this.swiper.activeIndex - animationProgress;
-        if (delta === 0) {
-            return "NONE";
-        } else if (delta > 0) {
-            return "NEXT";
-        } else {
-            return "BACK";
-        }
-    }
+    // getActiveIndexBeforeTransitionStart(swiper, slides) {
+    //     const isDragging = !Math.abs(slides[swiper.activeIndex].progress === 1);
+    //     if (isDragging) {
+    //         return swiper.slidesGrid.indexOf(-swiper.touchEventsData.startTranslate || swiper.params.initialSlide);
+    //     } else {
+    //         return swiper.activeIndex;
+    //     }
+    // }
 
     progress(swiper, progress) {
         //console.log(progress);
@@ -59,56 +97,42 @@ The startTranslate doesn't exist on initial load so we use the initialSlide inde
   */
     setTransition(swiper, transitionSpeed) {
         const $transitionElements = swiper.slides;
-        $transitionElements
-            .transition(transitionSpeed)
-            .find(
-                ".swiper-slide-shadow-top, .swiper-slide-shadow-right, .swiper-slide-shadow-bottom, .swiper-slide-shadow-left"
-            )
-            .transition(transitionSpeed);
-        effectVirtualTransitionEnd({ swiper, transitionSpeed, transformEl: false });
-        console.log("tr: " + transitionSpeed);
-
-        // if (transitionSpeed > 0) {
-        //     const slides = Object.values(swiper.slides);
-        //     slides.map((slide, index) => {
-        //         swiper.slides[index].style.clipPath = "";
-        //         console.log(slide.style.clipPath);
-        //     });
-        // }
+        $transitionElements.transition(transitionSpeed);
+        // .find(
+        //     ".swiper-slide-shadow-top, .swiper-slide-shadow-right, .swiper-slide-shadow-bottom, .swiper-slide-shadow-left"
+        // )
+        // .transition(transitionSpeed);
+        effectVirtualTransitionEnd({ swiper, transitionSpeed });
+        //console.log("tr: " + transitionSpeed, swiper);
+        this.currentTransitionSpeed = transitionSpeed;
     }
 
     setTranslate(swiper, wrapperTranslate) {
         if (swiper.slides.length == 0) return;
 
+        //const durationInSeconds = this.getTransitionSpeed() / 1000;
         const durationInSeconds = this.getTransitionSpeed() / 1000;
-        console.log(durationInSeconds);
+        //console.log(durationInSeconds);
         // convert slides object to plain array
         const slides = Object.values(swiper.slides); //.slice(0, -1);
         // get the index of the slide active before transition start (activeIndex changes halfway when dragging)
-        const originIndex = this.getActiveIndexBeforeTransitionStart(swiper, slides);
+        //const originIndex = this.getActiveIndexBeforeTransitionStart(swiper, slides);
         // get information about animation progress from the active slide - the active slide's value is always -1 to 1.
         /* 
     every slide has a progress attribute equal to the "distance" from the current active index.
     */
-        const originSlide = slides[originIndex];
-        const animationProgress = -wrapperTranslate / originSlide.swiperSlideSize;
-        //console.log(animationProgress);
+        //const originSlide = slides[originIndex];
+        const animationProgress = -wrapperTranslate / slides[0].swiperSlideSize;
+        //debug
+        this.setDebugValue("progress", animationProgress);
+        this.setDebugValue("direction", this.getDirection(animationProgress));
+        this.setDebugValue("cur_ind", this.currentSlideIndex);
+        //end debug
+
         // you can then get the drag direction like so:
         const direction = this.getDirection(animationProgress);
         // console.log(direction);
         //console.log(animationProgress, direction, swiper.activeIndex);
-
-        // do magic with each slide
-        // const progressDirection = (progress) => {
-        //     //console.log(direction);
-        //     switch (direction) {
-        //         case "NEXT":
-        //             return progress;
-        //         case "BACK":
-        //             return 1 - progress;
-        //     }
-        //     return 0;
-        // };
 
         slides.map((slide, index) => {
             // to put the slides behind each other we have to set their CSS translate accordingly since by default they are arranged in line.
@@ -129,10 +153,13 @@ The startTranslate doesn't exist on initial load so we use the initialSlide inde
                 x = 0;
             }
 
-            gsap.set(slide, {
-                x,
-                y
-            });
+            slide.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+
+            // gsap.set(slide, {
+            //     x,
+            //     y
+            // });
+
             // if (!slide.style.clipPath && index === Math.ceil(animationProgress)) {
             //     switch (direction) {
             //         case "NEXT":
@@ -145,82 +172,118 @@ The startTranslate doesn't exist on initial load so we use the initialSlide inde
             // do our animation stuff!
             const clip = (val, min, max) => Math.max(min, Math.min(val, max));
             const ZOOM_FACTOR = 0.05;
-            const progressLocal = Math.abs(((offsetIndex - animationProgress) * 1000) % 1000) / 1000;
+            const progressLocal = clip(Math.abs(this.currentSlideIndex - animationProgress), 0, 1);
             //console.log(progressLocal);
+            //debug
+            this.setDebugValue("p_local", progressLocal);
+            this.setDebugValue("next_index", this.getNextIndex());
+            this.setDebugValue("back_index", this.getBackIndex());
 
-            const opacity = (1 - progressLocal).toFixed(4);
+            //end debug
+
+            const opacity = clip(progressLocal * 3, 0, 1);
 
             //const clippedProgress = clip(progressLocal, -1, 1);
             //const scale = 1 - ZOOM_FACTOR * clippedProgress;
-            const percentProgress = (progressLocal * 100).toFixed(1);
+            const percentProgress = (progressLocal * 80).toFixed(1);
 
             // you can do your CSS animation instead of using tweening.
 
-            // if (this._progress > 0) {
-            //     slide.style.clipPath = "";
-            //     // gsap.to(slide, {
-            //     //     //scale,
-            //     //     //opacity,
-            //     //     duration: durationInSeconds,
-            //     //     clipPath: `circle(72% at 50% 50%)`
-            //     // });
-            // }
-            if (index > Math.ceil(animationProgress)) {
-                slide.style.clipPath = `circle(0% at 50% 50%)`;
+            if (index > this.currentSlideIndex) {
+                if (this.getDirection(animationProgress) === "NEXT") {
+                    //console.log("Next index: " + index, "Next Target: " + this.getTargetIndex(animationProgress));
+                } else if (
+                    //this.getDirection(animationProgress) !== "NEXT" &&
+                    this.getTargetIndex(animationProgress) !== index
+                ) {
+                    slide.style.clipPath = `circle(0% at 50% 50%)`;
+                    slide.style.transitionDuration = `${swiper.params.speed + 300}ms`;
+                    slide.style.opacity = 0;
+                    //console.log("0%: " + index);
+                }
+            } else {
+                if (this.currentSlideIndex !== index) {
+                    if (this.getDirection(animationProgress) === "BACK") {
+                        //console.log("Back Target: " + index);
+                    } else {
+                        slide.style.clipPath = `circle(70% at 50% 50%)`;
+                        slide.style.opacity = 1;
+                        //console.log("100%: " + index);
+                    }
+                }
             }
-            //console.log(this.getDirection(animationProgress));
-            // if (durationInSeconds > 0) {
-            //     console.log(Math.ceil(percentProgress));
-            // }
-            if (durationInSeconds === 0) {
-                if (index === Math.ceil(animationProgress) && this.getDirection(animationProgress) === "NEXT") {
+            if (index === Math.ceil(animationProgress) || index === Math.floor(animationProgress)) {
+                //console.log(durationInSeconds, animationProgress, this.getDirection(animationProgress), index, slide);
+                //console.dir(swiper);
+            }
+            if (index === this.getNextIndex() && this.getDirection(animationProgress) === "NEXT") {
+                console.log("next", index, this.getNextIndex());
+
+                slide.style.clipPath = `circle(${percentProgress}% at 50% 50%)`;
+                slide.style.opacity = opacity;
+            }
+            if (index === Math.floor(animationProgress) && this.getDirection(animationProgress) === "BACK") {
+                console.log("back", index);
+                if (durationInSeconds > 0) {
+                    console.log("go Back");
                     gsap.to(slide, {
                         //scale,
-                        //opacity,
-                        duration: durationInSeconds,
+                        opacity: 0.5,
+                        //duration: durationInSeconds,
+                        clipPath: "circle(0% at 50% 50%)",
+                        ease: Power1.easeInOut,
+                        overwrite: true,
+                        immediateRender: true,
+                        onStart: () => {
+                            console.log("go Prev");
+                        }
+                    });
+                } else {
+                    gsap.to(slide, {
+                        //scale,
+                        opacity: 0,
+                        //duration: durationInSeconds,
                         clipPath: `circle(${percentProgress}% at 50% 50%)`,
                         ease: Power1.easeInOut
                     });
-
-                    //console.log(-slide.progress);
                 }
-            } else {
+
+                //console.log(-slide.progress);
             }
+
+            //console.log(swiper);
         });
     }
-    //height: 305px; z-index: 7; transform: translate(0px, -610px); transition-duration: 300ms; clip-path: circle(8.19672% at 50% 50%);
-    snapIndexChange(swiper) {
-        // Object.values(swiper.slides).map((slide, index) => {
-        //     //console.dir(slide);
-        //     //slide.style.transitionDuration = "";
-        //     slide.style.clipPath = "";
-        // });
-        ///console.log("!!!!!!!", swiper.activeIndex, this._progress);
+    handlerSlideChange(swiper) {
+        console.log(`Change slide to ${swiper.activeIndex}`);
+        this.currentSlideIndex = swiper.activeIndex;
     }
 
     init() {
         const that = this;
         this.swiper = new Swiper(".swiper", {
+            init: false,
             //cssMode: true,
+            initialSlide: 2,
             modules: [Mousewheel, FreeMode],
             freeMode: {
                 enabled: true,
-                sticky: true
+                sticky: false
             },
             mousewheel: {
                 //releaseOnEdges: true,
                 //thresholdTime: 1000,
                 //releaseOnEdges: false,
-                sensitivity: 0.7,
+                sensitivity: 0.35,
                 //thresholdDelta: 50,
                 invert: true
             },
+            resistance: false,
             // -----unrelated settings start -----
             grabCursor: true,
             keyboard: true,
             //direction: "horizontal",
             direction: "vertical",
-
             // -----unrelated settings end -----
             speed: 300,
             effect: "myCustomTransition",
@@ -245,21 +308,19 @@ The startTranslate doesn't exist on initial load so we use the initialSlide inde
                     if (swiper.params.effect !== "myCustomTransition") return;
                     that.setTranslate(swiper, translate);
                 },
-                resize: function (swiper) {
-                    swiper.update();
+                resize: function (swiperMain) {
+                    swiperMain.update();
                 },
-                snapIndexChange: function (swiperMain) {
+                slideChange: function (swiperMain) {
                     const swiper = this;
                     if (swiper.params.effect !== "myCustomTransition") return;
-                    that.snapIndexChange(swiper);
-                },
-                scroll: function (sw, e) {
-                    //sw.animating = false;
-                },
-                transitionEnd: function (s) {
-                    console.log("end");
+                    that.handlerSlideChange(swiper);
                 }
             }
         });
+        // this.swiper.slideToClosest(300, () => {
+        //     console.log("Closes");
+        //     return true;
+        // });
     }
 }
